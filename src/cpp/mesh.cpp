@@ -307,8 +307,8 @@ public:
   }
 
   // Generate a bezier by straightening a poly-geodesic path
-  DenseMatrix<double> compute_bezier_curve(std::vector<int64_t> verts, int64_t nRounds){
-    
+  DenseMatrix<double> compute_bezier_curve(std::vector<int64_t> verts, int64_t nRounds) {
+
     // Convert to a list of vertices
     std::vector<Vertex> vertices(verts.size());
 
@@ -337,6 +337,7 @@ public:
 
     return out;
   }
+
 private:
   std::unique_ptr<ManifoldSurfaceMesh> mesh;
   std::unique_ptr<VertexPositionGeometry> geom;
