@@ -71,6 +71,9 @@ class EdgeFlipGeodesicSolver():
     
     def find_geodesic_loop(self, v_list):
         return self.bound_solver.find_geodesic_loop(v_list)
+
+    def compute_bezier_curve(self, v_list, n_rounds):
+        return self.bound_solver.compute_bezier_curve(v_list, n_rounds)
     
 
 def cotan_laplacian(V, F, denom_eps=0.):

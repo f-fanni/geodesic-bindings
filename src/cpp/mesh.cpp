@@ -306,6 +306,37 @@ public:
     return out;
   }
 
+  // Generate a bezier by straightening a poly-geodesic path
+  DenseMatrix<double> compute_bezier_curve(std::vector<int64_t> verts, int64_t nRounds){
+    
+    // Convert to a list of vertices
+    std::vector<Vertex> vertices(verts.size());
+
+    for (size_t i = 0; i + 1 < verts.size(); i++) {
+      vertices[i] = mesh->vertex(verts[i]);
+    }
+
+    // Construct a suitable network for bezier
+    auto bezierNetwork = FlipEdgeNetwork::constructFromPiecewiseDijkstraPath(*mesh, *geom, vertices, false, true);
+
+    // Create the bezier
+    bezierNetwork->bezierSubdivide(nRounds);
+
+    // Extract the path and store it in the vector
+    std::vector<Vector3> path3D = bezierNetwork->getPathPolyline3D().front();
+    DenseMatrix<double> out(path3D.size(), 3);
+    for (size_t i = 0; i < path3D.size(); i++) {
+      for (size_t j = 0; j < 3; j++) {
+        out(i, j) = path3D[i][j];
+      }
+    }
+
+    // Be kind, rewind
+    // bezierNetwork->rewind();
+    // No rewind necessary, bezierNetwork will be destroyed anyway
+
+    return out;
+  }
 private:
   std::unique_ptr<ManifoldSurfaceMesh> mesh;
   std::unique_ptr<VertexPositionGeometry> geom;
@@ -337,7 +368,8 @@ void bind_mesh(py::module& m) {
         .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>>())
         .def("find_geodesic_path", &EdgeFlipGeodesicsManager::find_geodesic_path, py::arg("source_vert"), py::arg("target_vert"))
         .def("find_geodesic_path_poly", &EdgeFlipGeodesicsManager::find_geodesic_path_poly, py::arg("vert_list"))
-        .def("find_geodesic_loop", &EdgeFlipGeodesicsManager::find_geodesic_loop, py::arg("vert_list"));
+        .def("find_geodesic_loop", &EdgeFlipGeodesicsManager::find_geodesic_loop, py::arg("vert_list"))
+        .def("compute_bezier_curve", &EdgeFlipGeodesicsManager::compute_bezier_curve, py::arg("vert_list"), py::arg("n_rounds"));
 
   //m.def("read_mesh", &read_mesh, "Read a mesh from file.", py::arg("filename"));
 }
