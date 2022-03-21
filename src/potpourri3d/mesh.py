@@ -76,6 +76,18 @@ class EdgeFlipGeodesicSolver():
         return self.bound_solver.compute_bezier_curve(v_list, n_rounds)
     
 
+class TraceGeodesicsSolver():
+
+    def __init__(self, V, F):
+        validate_mesh(V, F, force_triangular=True)
+        self.bound_solver = pp3db.TraceGeodesicsMethod(V, F)
+
+    def trace_geodesic(self, v_ind, vector):
+        if len(vector) != 2:
+            raise ValueError("vector should be a 2D tangent vector")
+        return self.bound_solver.trace_geodesic_path(v_ind, vector)
+
+
 def cotan_laplacian(V, F, denom_eps=0.):
     validate_mesh(V, F, force_triangular=True)
     nV = V.shape[0]

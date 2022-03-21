@@ -345,6 +345,48 @@ private:
 };
 
 
+// A wrapper class for tracing straight geodesics
+// The method itself is not stateful, but this avoids passing vertices and faces every time
+class TraceGeodesicsMethod {
+
+public:
+  TraceGeodesicsMethod(DenseMatrix<double> verts, DenseMatrix<int64_t> faces) {
+
+    // Construct the internal mesh and geometry
+    mesh.reset(new ManifoldSurfaceMesh(faces));
+    geom.reset(new VertexPositionGeometry(*mesh));
+    for (size_t i = 0; i < mesh->nVertices(); i++) {
+      for (size_t j = 0; j < 3; j++) {
+        geom->inputVertexPositions[i][j] = verts(i, j);
+      }
+    }
+  }
+
+  // Trace a geodesic path with a given direction, returns the final point, the face it lies in and the ending direction
+  std::tuple<Eigen::Vector3d, int64_t, Eigen::Vector2d> trace_geodesic_path(int64_t startVertex,
+                                                                            DenseMatrix<double> traceVec) {
+
+    // Convert the input to the expected types
+    Vector2 direction({traceVec(0), traceVec(1)});
+    SurfacePoint startPoint(mesh->vertex(startVertex));
+
+    // Actual path tracing
+    auto res = traceGeodesic(*geom, startPoint, direction);
+
+    // Extract the data to return
+    Vector3 endP = res.endPoint.interpolate(geom->vertexPositions);
+    int64_t faceInd = res.endPoint.inSomeFace().face.getIndex();
+    Vector2 endDir = res.endingDir;
+    return std::tuple<Eigen::Vector3d, int64_t, Eigen::Vector2d>(Eigen::Vector3d({endP.x, endP.y, endP.z}), faceInd,
+                                                                 Eigen::Vector2d({endDir.x, endDir.y}));
+  }
+
+private:
+  std::unique_ptr<ManifoldSurfaceMesh> mesh;
+  std::unique_ptr<VertexPositionGeometry> geom;
+};
+
+
 // Actual binding code
 // clang-format off
 void bind_mesh(py::module& m) {
@@ -371,6 +413,10 @@ void bind_mesh(py::module& m) {
         .def("find_geodesic_path_poly", &EdgeFlipGeodesicsManager::find_geodesic_path_poly, py::arg("vert_list"))
         .def("find_geodesic_loop", &EdgeFlipGeodesicsManager::find_geodesic_loop, py::arg("vert_list"))
         .def("compute_bezier_curve", &EdgeFlipGeodesicsManager::compute_bezier_curve, py::arg("vert_list"), py::arg("n_rounds"));
+
+  py::class_<TraceGeodesicsMethod>(m, "TraceGeodesicsMethod")
+        .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>>())
+        .def("trace_geodesic_path", &TraceGeodesicsMethod::trace_geodesic_path, py::arg("start_vertex"), py::arg("trace_vector"));
 
   //m.def("read_mesh", &read_mesh, "Read a mesh from file.", py::arg("filename"));
 }
