@@ -312,13 +312,14 @@ public:
     // Convert to a list of vertices
     std::vector<Vertex> vertices(verts.size());
 
-    for (size_t i = 0; i + 1 < verts.size(); i++) {
+    for (size_t i = 0; i < verts.size(); i++) {
       vertices[i] = mesh->vertex(verts[i]);
     }
 
     // Construct a suitable network for bezier
     auto bezierNetwork = FlipEdgeNetwork::constructFromPiecewiseDijkstraPath(*mesh, *geom, vertices, false, true);
-
+    bezierNetwork->posGeom = geom.get();
+    
     // Create the bezier
     bezierNetwork->bezierSubdivide(nRounds);
 
