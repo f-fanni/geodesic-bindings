@@ -74,7 +74,10 @@ class EdgeFlipGeodesicSolver():
 
     def compute_bezier_curve(self, v_list, n_rounds):
         return self.bound_solver.compute_bezier_curve(v_list, n_rounds)
-    
+
+    def compute_bezier_curve_geopath(self, v_list, n_rounds):
+        return self.bound_solver.compute_bezier_curve_geopath(v_list, n_rounds)
+
 
 class TraceGeodesicsSolver():
 

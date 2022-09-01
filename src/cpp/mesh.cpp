@@ -319,7 +319,7 @@ public:
     // Construct a suitable network for bezier
     auto bezierNetwork = FlipEdgeNetwork::constructFromPiecewiseDijkstraPath(*mesh, *geom, vertices, false, true);
     bezierNetwork->posGeom = geom.get();
-    
+
     // Create the bezier
     bezierNetwork->bezierSubdivide(nRounds);
 
@@ -337,6 +337,43 @@ public:
     // No rewind necessary, bezierNetwork will be destroyed anyway
 
     return out;
+  }
+
+  // Generate a bezier by straightening a poly-geodesic path, returned as a geodesic path
+  std::pair<DenseMatrix<double>, Vector<int>> compute_bezier_curve_geopath(std::vector<int64_t> verts,
+                                                                           int64_t nRounds) {
+
+    // Convert to a list of vertices
+    std::vector<Vertex> vertices(verts.size());
+
+    for (size_t i = 0; i < verts.size(); i++) {
+      vertices[i] = mesh->vertex(verts[i]);
+    }
+
+    // Construct a suitable network for bezier
+    auto bezierNetwork = FlipEdgeNetwork::constructFromPiecewiseDijkstraPath(*mesh, *geom, vertices, false, true);
+    bezierNetwork->posGeom = geom.get();
+
+    // Create the bezier
+    bezierNetwork->bezierSubdivide(nRounds);
+
+    // Extract the path and store it in the vector
+    auto path = bezierNetwork->getPathPolyline().front();
+    DenseMatrix<double> barycentric_coords(path.size(), 3);
+    Vector<int> face_indices(path.size());
+    for (size_t i = 0; i < path.size(); i++) {
+      auto face_point = path[i].inSomeFace();
+      face_indices[i] = face_point.face.getIndex();
+      for (size_t j = 0; j < 3; j++) {
+        barycentric_coords(i, j) = face_point.faceCoords[j];
+      }
+    }
+
+    // Be kind, rewind
+    // bezierNetwork->rewind();
+    // No rewind necessary, bezierNetwork will be destroyed anyway
+
+    return {barycentric_coords, face_indices};
   }
 
 private:
@@ -413,7 +450,8 @@ void bind_mesh(py::module& m) {
         .def("find_geodesic_path", &EdgeFlipGeodesicsManager::find_geodesic_path, py::arg("source_vert"), py::arg("target_vert"))
         .def("find_geodesic_path_poly", &EdgeFlipGeodesicsManager::find_geodesic_path_poly, py::arg("vert_list"))
         .def("find_geodesic_loop", &EdgeFlipGeodesicsManager::find_geodesic_loop, py::arg("vert_list"))
-        .def("compute_bezier_curve", &EdgeFlipGeodesicsManager::compute_bezier_curve, py::arg("vert_list"), py::arg("n_rounds"));
+        .def("compute_bezier_curve", &EdgeFlipGeodesicsManager::compute_bezier_curve, py::arg("vert_list"), py::arg("n_rounds"))
+        .def("compute_bezier_curve_geopath", &EdgeFlipGeodesicsManager::compute_bezier_curve_geopath, py::arg("vert_list"), py::arg("n_rounds"));
 
   py::class_<TraceGeodesicsMethod>(m, "TraceGeodesicsMethod")
         .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>>())
