@@ -1,4 +1,5 @@
 #include "geometrycentral/numerical/linear_algebra_utilities.h"
+#include "geometrycentral/surface/direction_fields.h"
 #include "geometrycentral/surface/edge_length_geometry.h"
 #include "geometrycentral/surface/flip_geodesics.h"
 #include "geometrycentral/surface/heat_method_distance.h"
@@ -424,6 +425,36 @@ private:
   std::unique_ptr<VertexPositionGeometry> geom;
 };
 
+DenseMatrix<double> compute_direction_field(DenseMatrix<double> verts, DenseMatrix<int64_t> faces, int n_sym) {
+  std::unique_ptr<ManifoldSurfaceMesh> mesh;
+  std::unique_ptr<VertexPositionGeometry> geom;
+  DenseMatrix<double> res(verts.rows(), 2 * n_sym);
+  // Construct the internal mesh and geometry
+  mesh.reset(new ManifoldSurfaceMesh(faces));
+  geom.reset(new VertexPositionGeometry(*mesh));
+  for (size_t i = 0; i < mesh->nVertices(); i++) {
+    for (size_t j = 0; j < 3; j++) {
+      geom->inputVertexPositions[i][j] = verts(i, j);
+    }
+  }
+  // Compute the field
+  VertexData<Vector2> directions = computeSmoothestVertexDirectionField(*geom, n_sym);
+  // Generate the explicit vectors in the tangent plane
+  for (int i = 0; i < mesh->nVertices(); i++) {
+    const auto& v = mesh->vertex(i);
+    Vector2 representative = directions[v];
+    Vector2 crossDir = representative.pow(1. / n_sym); // take the n'th root
+
+    // loop over the four directions
+    for (int rot = 0; rot < n_sym; rot++) {
+      // crossDir is one of the four cross directions, as a tangent vector
+      crossDir = crossDir.rotate((2 * M_PI / n_sym) * rot);
+      res(i, 2 * rot) = crossDir.x;
+      res(i, (2 * rot) + 1) = crossDir.y;
+    }
+  }
+  return res;
+}
 
 // Actual binding code
 // clang-format off
@@ -456,6 +487,8 @@ void bind_mesh(py::module& m) {
   py::class_<TraceGeodesicsMethod>(m, "TraceGeodesicsMethod")
         .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>>())
         .def("trace_geodesic_path", &TraceGeodesicsMethod::trace_geodesic_path, py::arg("start_vertex"), py::arg("trace_vector"));
+
+  m.def("compute_direction_field", &compute_direction_field, py::arg("vert_list"), py::arg("vert_list"), py::arg("n_symmetries"));
 
   //m.def("read_mesh", &read_mesh, "Read a mesh from file.", py::arg("filename"));
 }

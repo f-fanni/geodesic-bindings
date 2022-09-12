@@ -91,6 +91,10 @@ class TraceGeodesicsSolver():
         return self.bound_solver.trace_geodesic_path(v_ind, vector)
 
 
+def compute_direction_field(V, F, n_symmetries):
+    return pp3db.compute_direction_field(V, F, n_symmetries)
+
+
 def cotan_laplacian(V, F, denom_eps=0.):
     validate_mesh(V, F, force_triangular=True)
     nV = V.shape[0]
