@@ -420,6 +420,28 @@ public:
                                                                  Eigen::Vector2d({endDir.x, endDir.y}));
   }
 
+  // Trace a geodesic path with a given direction, returns the final point as meshpoint, the face it lies in and the
+  // ending direction
+  std::tuple<Eigen::Vector3d, int64_t, Eigen::Vector2d>
+  trace_geodesic_path_meshpoint(DenseMatrix<double> barycentric_coords, int64_t face_id, DenseMatrix<double> traceVec) {
+
+    // Convert the input to the expected types
+    Vector2 direction({traceVec(0), traceVec(1)});
+    SurfacePoint startPoint(mesh->face(face_id),
+                            Vector3({barycentric_coords(0), barycentric_coords(1), barycentric_coords(2)}));
+
+    // Actual path tracing
+    auto res = traceGeodesic(*geom, startPoint, direction);
+
+    // Extract the data to return
+    SurfacePoint res_point = res.endPoint.inSomeFace();
+    Vector3 endP = res_point.faceCoords;
+    int64_t faceInd = res_point.face.getIndex();
+    Vector2 endDir = res.endingDir;
+    return std::tuple<Eigen::Vector3d, int64_t, Eigen::Vector2d>(Eigen::Vector3d({endP.x, endP.y, endP.z}), faceInd,
+                                                                 Eigen::Vector2d({endDir.x, endDir.y}));
+  }
+
 private:
   std::unique_ptr<ManifoldSurfaceMesh> mesh;
   std::unique_ptr<VertexPositionGeometry> geom;
@@ -486,7 +508,8 @@ void bind_mesh(py::module& m) {
 
   py::class_<TraceGeodesicsMethod>(m, "TraceGeodesicsMethod")
         .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>>())
-        .def("trace_geodesic_path", &TraceGeodesicsMethod::trace_geodesic_path, py::arg("start_vertex"), py::arg("trace_vector"));
+        .def("trace_geodesic_path", &TraceGeodesicsMethod::trace_geodesic_path, py::arg("start_vertex"), py::arg("trace_vector"))
+        .def("trace_geodesic_path", &TraceGeodesicsMethod::trace_geodesic_path_meshpoint, py::arg("barycentric_coords"), py::arg("face_ids"), py::arg("trace_vector"));
 
   m.def("compute_direction_field", &compute_direction_field, py::arg("vert_list"), py::arg("vert_list"), py::arg("n_symmetries"));
 

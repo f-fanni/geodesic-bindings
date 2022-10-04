@@ -90,6 +90,13 @@ class TraceGeodesicsSolver():
             raise ValueError("vector should be a 2D tangent vector")
         return self.bound_solver.trace_geodesic_path(v_ind, vector)
 
+    def trace_geodesic_meshpoint(self, barycentric_coords, face_ind, vector):
+        if len(vector) != 2:
+            raise ValueError("vector should be a 2D tangent vector")
+        if len(barycentric_coords) != 3:
+            raise ValueError("barycentric_coords should contain 3 values")
+
+        return self.bound_solver.trace_geodesic_meshpoint(barycentric_coords, face_ind, vector)
 
 def compute_direction_field(V, F, n_symmetries):
     return pp3db.compute_direction_field(V, F, n_symmetries)
