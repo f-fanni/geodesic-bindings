@@ -509,7 +509,7 @@ void bind_mesh(py::module& m) {
   py::class_<TraceGeodesicsMethod>(m, "TraceGeodesicsMethod")
         .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>>())
         .def("trace_geodesic_path", &TraceGeodesicsMethod::trace_geodesic_path, py::arg("start_vertex"), py::arg("trace_vector"))
-        .def("trace_geodesic_path", &TraceGeodesicsMethod::trace_geodesic_path_meshpoint, py::arg("barycentric_coords"), py::arg("face_ids"), py::arg("trace_vector"));
+        .def("trace_geodesic_meshpoint", &TraceGeodesicsMethod::trace_geodesic_path_meshpoint, py::arg("barycentric_coords"), py::arg("face_ids"), py::arg("trace_vector"));
 
   m.def("compute_direction_field", &compute_direction_field, py::arg("vert_list"), py::arg("vert_list"), py::arg("n_symmetries"));
 
