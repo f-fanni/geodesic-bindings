@@ -18,6 +18,9 @@ class MeshHeatMethodDistanceSolver():
     def compute_distance_multisource(self, v_inds):
         return self.bound_solver.compute_distance_multisource(v_inds)
 
+    def compute_distance_multisource_meshpoint(self, barycentric_coords, face_ids):
+        return self.bound_solver.compute_distance_multisource_meshpoint(barycentric_coords, face_ids)
+
 def compute_distance(V, F, v_ind): 
     solver = MeshHeatMethodDistanceSolver(V, F)
     return solver.compute_distance(v_ind)
@@ -25,6 +28,10 @@ def compute_distance(V, F, v_ind):
 def compute_distance_multisource(V, F, v_inds):
     solver = MeshHeatMethodDistanceSolver(V, F)
     return solver.compute_distance_multisource(v_inds)
+
+def compute_distance_multisource_meshpoint(V, F, barycentric_coords, face_ids):
+    solver = MeshHeatMethodDistanceSolver(V, F)
+    solver.compute_distance_multisource_meshpoint(barycentric_coords, face_ids)
 
 
 class MeshVectorHeatSolver():

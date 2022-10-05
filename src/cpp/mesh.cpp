@@ -66,6 +66,19 @@ public:
     return dist.toVector();
   }
 
+  // Solve for distance from a collection of surface points
+  Vector<double> compute_distance_multisource_meshpoint(DenseMatrix<double> barycentric_coords,
+                                                        Vector<int64_t> face_ids) {
+    std::vector<SurfacePoint> sources;
+    // Convert the input to the expected types
+    for (size_t i = 0; i < barycentric_coords.rows(); i++) {
+      sources.push_back(SurfacePoint(mesh->face(face_ids[i]),
+                                     {barycentric_coords(i, 0), barycentric_coords(i, 1), barycentric_coords(i, 2)}));
+    }
+    VertexData<double> dist = solver->computeDistance(sources);
+    return dist.toVector();
+  }
+
 private:
   std::unique_ptr<SurfaceMesh> mesh;
   std::unique_ptr<VertexPositionGeometry> geom;
@@ -485,7 +498,8 @@ void bind_mesh(py::module& m) {
   py::class_<HeatMethodDistanceEigen>(m, "MeshHeatMethodDistance")
         .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>, double, bool>())
         .def("compute_distance", &HeatMethodDistanceEigen::compute_distance, py::arg("source_vert"))
-        .def("compute_distance_multisource", &HeatMethodDistanceEigen::compute_distance_multisource, py::arg("source_verts"));
+        .def("compute_distance_multisource", &HeatMethodDistanceEigen::compute_distance_multisource, py::arg("source_verts"))
+        .def("compute_distance_multisource_meshpoint", &HeatMethodDistanceEigen::compute_distance_multisource_meshpoint, py::arg("barycentric_coords"), py::arg("face_ids"));
  
 
   py::class_<VectorHeatMethodEigen>(m, "MeshVectorHeatMethod")
