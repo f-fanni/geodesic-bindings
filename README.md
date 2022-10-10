@@ -1,6 +1,6 @@
 # Geodesic bindings
 
-A collection of bindings from potpourri3d and yocto. Based on the potpourri3d repository.
+A collection of bindings from potpourri3d and yocto. Based on the potpourri3d repository. The yocto mesh library is temporarily hard copied in the dependencies folder.
 
 # potpourri3d
 
