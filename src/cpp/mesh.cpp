@@ -11,6 +11,8 @@
 #include "geometrycentral/surface/vector_heat_method.h"
 #include "geometrycentral/surface/vertex_position_geometry.h"
 #include "geometrycentral/utilities/eigen_interop_helpers.h"
+#include "yocto/yocto_shape.h"
+#include "yocto_mesh/yocto_mesh.h"
 
 #include <pybind11/eigen.h>
 #include <pybind11/numpy.h>
@@ -491,6 +493,130 @@ DenseMatrix<double> compute_direction_field(DenseMatrix<double> verts, DenseMatr
   return res;
 }
 
+DenseMatrix<double> compute_face_direction_field(DenseMatrix<double> verts, DenseMatrix<int64_t> faces, int n_sym) {
+  std::unique_ptr<ManifoldSurfaceMesh> mesh;
+  std::unique_ptr<VertexPositionGeometry> geom;
+  DenseMatrix<double> res(faces.rows(), 2 * n_sym);
+  // Construct the internal mesh and geometry
+  mesh.reset(new ManifoldSurfaceMesh(faces));
+  geom.reset(new VertexPositionGeometry(*mesh));
+  for (size_t i = 0; i < mesh->nVertices(); i++) {
+    for (size_t j = 0; j < 3; j++) {
+      geom->inputVertexPositions[i][j] = verts(i, j);
+    }
+  }
+  // Compute the field
+  FaceData<Vector2> directions = computeSmoothestFaceDirectionField(*geom, n_sym);
+  // Generate the explicit vectors in the tangent plane
+  for (int i = 0; i < mesh->nFaces(); i++) {
+    const auto& f = mesh->face(i);
+    Vector2 representative = directions[f];
+    Vector2 crossDir = representative.pow(1. / n_sym); // take the n'th root
+
+    // loop over the four directions
+    for (int rot = 0; rot < n_sym; rot++) {
+      // crossDir is one of the four cross directions, as a tangent vector
+      crossDir = crossDir.rotate((2 * M_PI / n_sym) * rot);
+      res(i, 2 * rot) = crossDir.x;
+      res(i, (2 * rot) + 1) = crossDir.y;
+    }
+  }
+  return res;
+}
+
+// A wrapper class for the yocto mesh methods
+class YoctoMeshManager {
+
+public:
+  YoctoMeshManager(DenseMatrix<double> verts, DenseMatrix<int64_t> faces) {
+    positions.resize(verts.rows());
+    for (int i = 0; i < positions.size(); i++) {
+      positions[i] = {verts(i, 0), verts(i, 1), verts(i, 2)};
+    }
+    triangles.resize(faces.rows());
+    for (int i = 0; i < triangles.size(); i++) {
+      triangles[i] = {faces(i, 0), faces(i, 1), faces(i, 2)};
+    }
+    adjacencies = yocto::face_adjacencies(triangles);
+    geo_solver = yocto::make_geodesic_solver(triangles, adjacencies, positions);
+    dual_geo_solver = yocto::make_dual_geodesic_solver(triangles, positions, adjacencies);
+    // vertices2faces = yocto::vertex_to_faces_adjacencies(triangles, adjacencies);
+    vertices2mesh_point.resize(triangles.size());
+    for (int i = 0; i < triangles.size(); i++) {
+      vertices2mesh_point[triangles[i][0]] = {i, {0, 0}};
+      vertices2mesh_point[triangles[i][1]] = {i, {1, 0}};
+      vertices2mesh_point[triangles[i][2]] = {i, {0, 1}};
+    }
+  }
+
+  std::pair<DenseMatrix<double>, Vector<int>> compute_bezier_curve_vertices(std::vector<int64_t> verts,
+                                                                            int64_t subdivisions = 4) {
+    DenseMatrix<double> res_coords;
+    Vector<int> res_faces;
+    std::vector<yocto::mesh_point> bezier_path;
+
+    std::vector<yocto::mesh_point> controls(verts.size());
+    for (int i = 0; i < verts.size(); i++) {
+      controls[i] = vertices2mesh_point[verts[i]];
+    }
+    bezier_path =
+        yocto::compute_bezier_uniform(dual_geo_solver, triangles, positions, adjacencies, controls, subdivisions);
+
+    res_coords.resize(bezier_path.size(), 3);
+    res_faces.resize(bezier_path.size());
+    for (int i = 0; i < bezier_path.size(); i++) {
+      auto&& mp = bezier_path[i];
+      res_faces(i) = mp.face;
+      res_coords(i, 0) = (1 - (mp.uv[0] + mp.uv[1]));
+      res_coords(i, 1) = mp.uv[0];
+      res_coords(i, 2) = mp.uv[1];
+    }
+    return {res_coords, res_faces};
+  }
+
+  std::pair<DenseMatrix<double>, Vector<int>> compute_bezier_curve_meshpoints(DenseMatrix<double> barycentric_coords,
+                                                                              std::vector<int64_t> face_ids,
+                                                                              int64_t subdivisions = 4) {
+    DenseMatrix<double> res_coords;
+    Vector<int> res_faces;
+    std::vector<yocto::mesh_point> bezier_path;
+
+    std::vector<yocto::mesh_point> controls(face_ids.size());
+    for (int i = 0; i < face_ids.size(); i++) {
+      controls[i] = {face_ids[i], {barycentric_coords(i, 1), barycentric_coords(i, 2)}};
+    }
+    bezier_path =
+        yocto::compute_bezier_uniform(dual_geo_solver, triangles, positions, adjacencies, controls, subdivisions);
+
+    res_coords.resize(bezier_path.size(), 3);
+    res_faces.resize(bezier_path.size());
+    for (int i = 0; i < bezier_path.size(); i++) {
+      auto&& mp = bezier_path[i];
+      res_faces(i) = mp.face;
+      res_coords(i, 0) = (1 - (mp.uv[0] + mp.uv[1]));
+      res_coords(i, 1) = mp.uv[0];
+      res_coords(i, 2) = mp.uv[1];
+    }
+    return {res_coords, res_faces};
+  }
+
+  // Solve for distance from a collection of vertices
+  std::vector<double> compute_distance(std::vector<int64_t> sourceVerts) {
+    std::vector<int> aux(sourceVerts.begin(), sourceVerts.end());
+    std::vector<float> res = compute_geodesic_distances(geo_solver, aux);
+
+    return std::vector<double>(res.begin(), res.end());
+  }
+
+private:
+  std::vector<yocto::vec3i> triangles;
+  std::vector<yocto::vec3i> adjacencies;
+  std::vector<yocto::vec3f> positions;
+  std::vector<yocto::mesh_point> vertices2mesh_point;
+  yocto::geodesic_solver geo_solver;
+  yocto::dual_geodesic_solver dual_geo_solver;
+};
+
 // Actual binding code
 // clang-format off
 void bind_mesh(py::module& m) {
@@ -525,7 +651,14 @@ void bind_mesh(py::module& m) {
         .def("trace_geodesic_path", &TraceGeodesicsMethod::trace_geodesic_path, py::arg("start_vertex"), py::arg("trace_vector"))
         .def("trace_geodesic_meshpoint", &TraceGeodesicsMethod::trace_geodesic_path_meshpoint, py::arg("barycentric_coords"), py::arg("face_ids"), py::arg("trace_vector"));
 
-  m.def("compute_direction_field", &compute_direction_field, py::arg("vert_list"), py::arg("vert_list"), py::arg("n_symmetries"));
+  m.def("compute_direction_field", &compute_direction_field, py::arg("vert_list"), py::arg("face_list"), py::arg("n_symmetries"));
+  m.def("compute_face_direction_field", &compute_face_direction_field, py::arg("vert_list"), py::arg("face_list"), py::arg("n_symmetries"));
+
+  py::class_<YoctoMeshManager>(m, "YoctoMeshManager")
+        .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>>())
+        .def("compute_bezier_curve_vertices", &YoctoMeshManager::compute_bezier_curve_vertices, py::arg("vert_list"), py::arg("subdivisions"))
+        .def("compute_bezier_curve_meshpoints", &YoctoMeshManager::compute_bezier_curve_meshpoints, py::arg("barycentric_coords"), py::arg("face_ids"), py::arg("subdivisions"))
+        .def("compute_distance", &YoctoMeshManager::compute_distance, py::arg("sourceVerts"));
 
   //m.def("read_mesh", &read_mesh, "Read a mesh from file.", py::arg("filename"));
 }

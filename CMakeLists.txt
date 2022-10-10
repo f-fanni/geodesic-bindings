@@ -10,6 +10,7 @@ set(GC_EIGEN_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/deps/eigen" CACHE PATH "my pa
 # geometry-central
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 add_subdirectory(deps/geometry-central)
+add_subdirectory(deps/yocto-mesh)
 
 pybind11_add_module(potpourri3d_bindings
   src/cpp/core.cpp
@@ -19,5 +20,6 @@ pybind11_add_module(potpourri3d_bindings
 )
 
 include_directories(potpourri3d_bindings ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp)
+set_target_properties(potpourri3d_bindings PROPERTIES CXX_STANDARD 17)
 
-target_link_libraries(potpourri3d_bindings PRIVATE geometry-central)
+target_link_libraries(potpourri3d_bindings PRIVATE geometry-central yocto yocto_mesh)

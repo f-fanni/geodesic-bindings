@@ -17,7 +17,9 @@ ps.init()
 # Read input
 
 ## = Mesh test
-V, F = pp3d.read_mesh("bunny_small.ply")
+V, F = pp3d.read_mesh("test/vase.ply")
+#V, F = pp3d.read_mesh("/home/filippo/Desktop/masktest.obj")
+#V, F = pp3d.read_mesh("test/bunny_small.ply")
 ps_mesh = ps.register_surface_mesh("mesh", V, F)
 
 # Distance
@@ -119,4 +121,80 @@ evals, evecs = scipy.sparse.linalg.eigsh(L, k_eig, M, sigma=1e-8)
 for i in range(k_eig):
     ps_mesh.add_scalar_quantity("evec " + str(i), evecs[:,i])
 
+# #geodesics and bezier
+# path_pts = path_solver.compute_bezier_curve(v_list=[400,500,800,1000], n_rounds=8)
+# ps.register_curve_network("bezier", path_pts, edges='line')
+# ps.register_point_cloud("bezierp", path_pts)
+# 
+# bary,face_ids = path_solver.compute_bezier_curve_geopath(v_list=[400,500,800,1000], n_rounds=8)
+# path_pts = np.array([ bary[i,0]*V[F[face_ids[i],0]]+bary[i,1]*V[F[face_ids[i],1]]+bary[i,2]*V[F[face_ids[i],2]] for i in range(len(face_ids))])
+# ps.register_curve_network("bezier_alt", path_pts, edges='line')
+# ps.register_point_cloud("bezier_altp", path_pts)
+
+# directional field
+ext = pp3d.compute_direction_field(V, F, 1)
+ext = pp3d.compute_direction_field(V, F, 1)
+solver = pp3d.MeshVectorHeatSolver(V, F)
+# Vector heat (tangent frames)
+basisX, basisY, basisN = solver.get_tangent_frames()
+ext3D = ext[:,0,np.newaxis] * basisX +  ext[:,1,np.newaxis] * basisY
+ps_mesh.add_vector_quantity("directional vecs", ext3D)
+#ext3D = ext[:,2,np.newaxis] * basisX +  ext[:,3,np.newaxis] * basisY
+#ps_mesh.add_vector_quantity("directional vecs2", ext3D)
+#ext3D = ext[:,4,np.newaxis] * basisX +  ext[:,5,np.newaxis] * basisY
+#ps_mesh.add_vector_quantity("directional vecs3", ext3D)
+#ext3D = ext[:,6,np.newaxis] * basisX +  ext[:,7,np.newaxis] * basisY
+#ps_mesh.add_vector_quantity("directional vecs4", ext3D)
+
+
+import math
+
+ListPoin = [ 29630, 2870, 16885 , 22037 ]
+for poin in ListPoin:
+    text="Punto"+str(poin)
+    logmap = solver.compute_log_map(poin)
+    distances = np.linalg.norm(logmap - [0.,50.], axis=1)
+    path_pts_C=path_solver.find_geodesic_path(v_start=poin, v_end=np.argsort(distances)[0])
+    ps.register_point_cloud(text ,path_pts_C, radius=0.0025)
+    angle = -(math.atan2(ext[poin][1], ext[poin][0]))
+    for LM in logmap:
+        x = LM[0]
+        y = LM[1]
+        LM[0] = math.cos(angle) * (x) - math.sin(angle) * y
+        LM[1] = math.sin(angle) * (x) + math.cos(angle) * y
+    distances = np.linalg.norm(logmap - [0.,50.], axis=1)
+    path_pts_C=path_solver.find_geodesic_path(v_start=poin, v_end=np.argsort(distances)[0])
+    ps.register_point_cloud(text+"Orie" ,path_pts_C, radius=0.0025)
+
+
+from timeit import default_timer as timer
+solver = pp3d.TraceGeodesicsSolver(V,F)
+start = timer()
+for i in range(10000):
+    point, faceid, dir = solver.trace_geodesic(420, [10+np.random.randint(-5,5),50+np.random.randint(-5,5)])
+end = timer()
+print(("done in seconds: ",end - start, (end - start)/10000)) # Time in seconds, e.g. 5.38091952400282
+
+ps.register_curve_network("straight", np.array([V[420], point]), edges='line')
+
+
+#yocto beziers
+yoctosolver = pp3d.YoctoMeshSolver(V,F)
+baryy,face_idsy = yoctosolver.compute_bezier_curve_vertices(v_list=[400,500,800,1000], subdivisions=4)
+path_pts = np.array([ baryy[i,0]*V[F[face_idsy[i],0]]+baryy[i,1]*V[F[face_idsy[i],1]]+baryy[i,2]*V[F[face_idsy[i],2]] for i in range(len(face_idsy))])
+ps.register_curve_network("bezier_yocto", path_pts, edges='line')
+
+dists3 = yoctosolver.compute_distance([4, 13, 784])
+ps_cloud.add_scalar_quantity("dist3", dists3)
+
+#given ext3D[N], basisXYN[N] check inversion
+N = 420
+print(ext[N])
+print(ext3D[N])
+print(ext[N,0,np.newaxis] * basisX[N] +  ext[N,1,np.newaxis] * basisY[N])
+Mat = np.array([basisX[N],basisY[N],basisN[N],]).transpose()
+print(Mat)
+print(np.matmul(Mat, np.array([ 0.50548752, -0.86283392, 0])))
+print('---')
+print(np.linalg.solve(Mat, ext3D[N]))
 ps.show()

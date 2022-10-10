@@ -105,9 +105,26 @@ class TraceGeodesicsSolver():
 
         return self.bound_solver.trace_geodesic_meshpoint(barycentric_coords, face_ind, vector)
 
+class YoctoMeshSolver():
+
+    def __init__(self, V, F):
+        self.bound_solver = pp3db.YoctoMeshManager(V, F)
+
+    def compute_bezier_curve_vertices(self, v_list, subdivisions=4):
+        return self.bound_solver.compute_bezier_curve_vertices(v_list, subdivisions)
+
+    def compute_bezier_curve_meshpoints(self, barycentric_coordinates, face_ids, subdivisions=4):
+        return self.bound_solver.compute_bezier_curve_meshpoints(barycentric_coordinates, face_ids, subdivisions)
+
+    def compute_distance(self, sourceVerts):
+        return np.array(self.bound_solver.compute_distance(sourceVerts))
+
+
 def compute_direction_field(V, F, n_symmetries):
     return pp3db.compute_direction_field(V, F, n_symmetries)
 
+def compute_face_direction_field(V, F, n_symmetries):
+    return pp3db.compute_face_direction_field(V, F, n_symmetries)
 
 def cotan_laplacian(V, F, denom_eps=0.):
     validate_mesh(V, F, force_triangular=True)
