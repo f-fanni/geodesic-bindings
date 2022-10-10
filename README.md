@@ -1,3 +1,7 @@
+# Geodesic bindings
+
+A collection of bindings from potpourri3d and yocto. Based on the potpourri3d repository.
+
 # potpourri3d
 
 A Python library of various algorithms and utilities for 3D triangle meshes and point clouds. Managed by [Nicholas Sharp](https://nmwsharp.com), with new tools added lazily as needed. Currently, mainly bindings to C++ tools from [geometry-central](http://geometry-central.net/).
