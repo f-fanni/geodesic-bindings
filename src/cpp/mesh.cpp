@@ -531,11 +531,11 @@ public:
   YoctoMeshManager(DenseMatrix<double> verts, DenseMatrix<int64_t> faces) {
     positions.resize(verts.rows());
     for (int i = 0; i < positions.size(); i++) {
-      positions[i] = {verts(i, 0), verts(i, 1), verts(i, 2)};
+      positions[i] = {static_cast<float>(verts(i, 0)), static_cast<float>(verts(i, 1)), static_cast<float>(verts(i, 2))};
     }
     triangles.resize(faces.rows());
     for (int i = 0; i < triangles.size(); i++) {
-      triangles[i] = {faces(i, 0), faces(i, 1), faces(i, 2)};
+      triangles[i] = {static_cast<int>(faces(i, 0)), static_cast<int>(faces(i, 1)), static_cast<int>(faces(i, 2))};
     }
     adjacencies = yocto::face_adjacencies(triangles);
     geo_solver = yocto::make_geodesic_solver(triangles, adjacencies, positions);
@@ -583,7 +583,7 @@ public:
 
     std::vector<yocto::mesh_point> controls(face_ids.size());
     for (int i = 0; i < face_ids.size(); i++) {
-      controls[i] = {face_ids[i], {barycentric_coords(i, 1), barycentric_coords(i, 2)}};
+      controls[i] = {static_cast<int>(face_ids[i]), {static_cast<float>(barycentric_coords(i, 1)), static_cast<float>(barycentric_coords(i, 2))}};
     }
     bezier_path =
         yocto::compute_bezier_uniform(dual_geo_solver, triangles, positions, adjacencies, controls, subdivisions);
