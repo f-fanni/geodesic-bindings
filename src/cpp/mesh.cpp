@@ -580,14 +580,19 @@ public:
     DenseMatrix<double> res_coords;
     Vector<int> res_faces;
     std::vector<yocto::mesh_point> bezier_path;
+    std::vector<yocto::mesh_point> control_points;
 
     std::vector<yocto::mesh_point> controls(face_ids.size());
     for (int i = 0; i < face_ids.size(); i++) {
       controls[i] = {static_cast<int>(face_ids[i]), {static_cast<float>(barycentric_coords(i, 1)), static_cast<float>(barycentric_coords(i, 2))}};
     }
-    bezier_path =
+    control_points =
         yocto::compute_bezier_uniform(dual_geo_solver, triangles, positions, adjacencies, controls, subdivisions);
-
+    for (int i = 0; i < control_points.size()-1; i++) {
+      auto path = yocto::convert_mesh_path(triangles, adjacencies,
+        yocto::compute_shortest_path(dual_geo_solver, triangles, positions, adjacencies, control_points[i], control_points[i+1]));
+      bezier_path.insert(bezier_path.end(), path.begin(), path.end());
+    }
     res_coords.resize(bezier_path.size(), 3);
     res_faces.resize(bezier_path.size());
     for (int i = 0; i < bezier_path.size(); i++) {
