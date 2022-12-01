@@ -119,6 +119,8 @@ class YoctoMeshSolver():
     def compute_distance(self, sourceVerts):
         return np.array(self.bound_solver.compute_distance(sourceVerts))
 
+    def compute_distance_meshpoints(self, barycentric_coordinates, face_ids, max_distace):
+        return (self.bound_solver.compute_distance_meshpoints(barycentric_coordinates, face_ids, max_distace))
 
 def compute_direction_field(V, F, n_symmetries):
     return pp3db.compute_direction_field(V, F, n_symmetries)

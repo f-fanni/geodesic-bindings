@@ -531,7 +531,8 @@ public:
   YoctoMeshManager(DenseMatrix<double> verts, DenseMatrix<int64_t> faces) {
     positions.resize(verts.rows());
     for (int i = 0; i < positions.size(); i++) {
-      positions[i] = {static_cast<float>(verts(i, 0)), static_cast<float>(verts(i, 1)), static_cast<float>(verts(i, 2))};
+      positions[i] = {static_cast<float>(verts(i, 0)), static_cast<float>(verts(i, 1)),
+                      static_cast<float>(verts(i, 2))};
     }
     triangles.resize(faces.rows());
     for (int i = 0; i < triangles.size(); i++) {
@@ -584,13 +585,16 @@ public:
 
     std::vector<yocto::mesh_point> controls(face_ids.size());
     for (int i = 0; i < face_ids.size(); i++) {
-      controls[i] = {static_cast<int>(face_ids[i]), {static_cast<float>(barycentric_coords(i, 1)), static_cast<float>(barycentric_coords(i, 2))}};
+      controls[i] = {static_cast<int>(face_ids[i]),
+                     {static_cast<float>(barycentric_coords(i, 1)), static_cast<float>(barycentric_coords(i, 2))}};
     }
     control_points =
         yocto::compute_bezier_uniform(dual_geo_solver, triangles, positions, adjacencies, controls, subdivisions);
-    for (int i = 0; i < control_points.size()-1; i++) {
-      auto path = yocto::convert_mesh_path(triangles, adjacencies,
-        yocto::compute_shortest_path(dual_geo_solver, triangles, positions, adjacencies, control_points[i], control_points[i+1]));
+    for (int i = 0; i < control_points.size() - 1; i++) {
+      auto path =
+          yocto::convert_mesh_path(triangles, adjacencies,
+                                   yocto::compute_shortest_path(dual_geo_solver, triangles, positions, adjacencies,
+                                                                control_points[i], control_points[i + 1]));
       bezier_path.insert(bezier_path.end(), path.begin(), path.end());
     }
     res_coords.resize(bezier_path.size(), 3);
@@ -611,6 +615,27 @@ public:
     std::vector<float> res = compute_geodesic_distances(geo_solver, aux);
 
     return std::vector<double>(res.begin(), res.end());
+  }
+
+  // Solve for distance from a collection of meshpoints
+  // TODO this is probably not working as inteded
+  Vector<double> compute_distance_meshpoints(DenseMatrix<double> barycentric_coords, Vector<int64_t> face_ids,
+                                             float max_distance = yocto::flt_max) {
+    auto distances = std::vector<float>(geo_solver.graph.size(), yocto::flt_max);
+    std::vector<int> sources;
+    sources.reserve(2 * face_ids.size()); // just a rough estimate
+    for (int i = 0; i < face_ids.size(); i++) {
+      auto point = yocto::interpolate_triangle(
+          positions[triangles[i], 0], positions[triangles[i], 1], positions[triangles[i], 2],
+          {static_cast<float>(barycentric_coords(1)), static_cast<float>(barycentric_coords(2))});
+      for (auto j : {0, 1, 2}) {
+        distances[triangles[i], j] = yocto::distance(positions[triangles[i], j], point);
+        sources.push_back(static_cast<int>(triangles[i], j));
+      }
+    }
+    yocto::update_geodesic_distances(distances, geo_solver, sources, max_distance);
+    auto aux = std::vector<double>(distances.begin(), distances.end());
+    return Eigen::Map<Vector<double>, Eigen::Unaligned>(aux.data(), aux.size());
   }
 
 private:
@@ -663,7 +688,8 @@ void bind_mesh(py::module& m) {
         .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>>())
         .def("compute_bezier_curve_vertices", &YoctoMeshManager::compute_bezier_curve_vertices, py::arg("vert_list"), py::arg("subdivisions"))
         .def("compute_bezier_curve_meshpoints", &YoctoMeshManager::compute_bezier_curve_meshpoints, py::arg("barycentric_coords"), py::arg("face_ids"), py::arg("subdivisions"))
-        .def("compute_distance", &YoctoMeshManager::compute_distance, py::arg("sourceVerts"));
+        .def("compute_distance", &YoctoMeshManager::compute_distance, py::arg("sourceVerts"))
+        .def("compute_distance_meshpoints", &YoctoMeshManager::compute_distance_meshpoints, py::arg("barycentric_coords"), py::arg("face_ids"), py::arg("max_distance"));
 
   //m.def("read_mesh", &read_mesh, "Read a mesh from file.", py::arg("filename"));
 }
