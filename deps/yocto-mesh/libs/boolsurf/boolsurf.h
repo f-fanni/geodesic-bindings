@@ -1,5 +1,7 @@
 #pragma once
 
+#include <yocto/yocto_bvh.h>
+
 #include "boolsurf_utils.h"
 
 namespace yocto {
@@ -169,13 +171,13 @@ void init_mesh(bool_mesh& mesh);
 void reset_mesh(bool_mesh& mesh);
 
 void update_polygon(bool_state& state, const bool_mesh& mesh, int polygon_id);
-bool_homotopy_basis  compute_homotopy_basis(bool_mesh& mesh, int root);
+/* bool_homotopy_basis  compute_homotopy_basis(bool_mesh& mesh, int root);
 vector<mesh_polygon> smooth_homotopy_basis(
     const bool_homotopy_basis& homotopy_basis, const bool_mesh& mesh,
     bool smooth_generators);
 void        compute_homotopy_basis_borders(bool_mesh& mesh);
 vector<int> sort_homotopy_basis_around_vertex(
-    const bool_mesh& mesh, const bool_homotopy_basis& basis);
+    const bool_mesh& mesh, const bool_homotopy_basis& basis); */
 vector<int>              compute_polygonal_schema(const vector<int>& basis);
 vector<pair<int, float>> compute_polygon_basis_intersections(
     const mesh_polygon& polygon, bool_mesh& mesh);
@@ -186,10 +188,10 @@ mesh_polygon vectorize_generator_loop(
 vector<int> compute_strip_from_basis(const vector<int>& base,
     const vector<vector<int>>& triangle_rings, const vector<vec3i>& triangles,
     int root);
-std::tuple<vector<int>, mesh_point, mesh_point> cleaned_strip(
+/* std::tuple<vector<int>, mesh_point, mesh_point> cleaned_strip(
     const vector<vec3i>& triangles, const vector<vec3f>& positions,
     const vector<vec3i>& adjacencies, const vector<int>& strip,
-    const mesh_point& start, const mesh_point& end);
+    const mesh_point& start, const mesh_point& end); */
 void remove_loops_from_strip(vector<int>& strip);
 
 void              slice_mesh(bool_mesh& mesh, bool_state& state);
@@ -219,16 +221,16 @@ vector<mesh_segment> mesh_segments(const vector<vec3i>& triangles,
     const vector<int>& strip, const vector<float>& lerps,
     const mesh_point& start, const mesh_point& end);
 
-geodesic_path compute_geodesic_path(
-    const bool_mesh& mesh, const mesh_point& start, const mesh_point& end);
+/* geodesic_path compute_geodesic_path(
+    const bool_mesh& mesh, const mesh_point& start, const mesh_point& end); */
 
 mesh_point eval_geodesic_path(
     const bool_mesh& mesh, const geodesic_path& path, float t);
 
-void recompute_polygon_segments(const bool_mesh& mesh, const bool_state& state,
-    mesh_polygon& polygon, int index = 0);
+/* void recompute_polygon_segments(const bool_mesh& mesh, const bool_state& state,
+    mesh_polygon& polygon, int index = 0); */
 
-inline geodesic_path straightest_path(const bool_mesh& mesh,
+/* inline geodesic_path straightest_path(const bool_mesh& mesh,
     const mesh_point& start, const vec2f& direction, float length) {
   return straightest_path(mesh.triangles, mesh.positions, mesh.adjacencies,
       start, direction, length);
@@ -239,7 +241,7 @@ inline geodesic_path straightest_path(
   auto len = length(coord);
   return straightest_path(mesh.triangles, mesh.positions, mesh.adjacencies,
       start, coord / len, len);
-}
+} */
 
 inline vec3f eval_position(const bool_mesh& mesh, const mesh_point& point) {
   return eval_position(mesh.triangles, mesh.positions, point);
@@ -255,13 +257,13 @@ inline vec3f eval_normal(const bool_mesh& mesh, int face) {
       mesh.positions[x], mesh.positions[y], mesh.positions[z]);
 }
 
-mesh_point intersect_mesh(const bool_mesh& mesh, const shape_bvh& bvh,
+/* mesh_point intersect_mesh(const bool_mesh& mesh, const shape_bvh& bvh,
     const scene_camera& camera, const vec2f& uv);
 
 inline mesh_point intersect_mesh(
     const bool_mesh& mesh, const scene_camera& camera, const vec2f& uv) {
   return intersect_mesh(mesh, mesh.bvh, camera, uv);
-}
+} */
 
 vec3f get_cell_color(const bool_state& state, int cell_id, bool color_shapes);
 

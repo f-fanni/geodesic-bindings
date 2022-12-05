@@ -10,6 +10,7 @@
 #include <yocto/yocto_scene.h>
 #include <yocto/yocto_shape.h>  // hashing vec2i
 
+#include <unordered_set>
 #include <cassert>
 #include <deque>
 
@@ -17,7 +18,7 @@
 
 namespace std {
 template <>
-struct std::hash<std::vector<int>> {
+struct hash<std::vector<int>> {
   size_t operator()(const std::vector<int>& V) const {
     auto hash = V.size();
     for (auto& i : V) {
@@ -28,7 +29,7 @@ struct std::hash<std::vector<int>> {
 };
 
 template <class T>
-struct std::hash<std::vector<T>> {
+struct hash<std::vector<T>> {
   size_t operator()(const std::vector<T>& V) const {
     auto hash = V.size();
     for (auto& i : V) {
@@ -39,7 +40,7 @@ struct std::hash<std::vector<T>> {
 };
 
 template <>
-struct std::hash<std::unordered_set<int>> {
+struct hash<std::unordered_set<int>> {
   size_t operator()(const std::unordered_set<int>& V) const {
     auto hash = V.size();
     for (auto& i : V) {
@@ -157,7 +158,7 @@ inline int find_adjacent_triangle(
 
 inline bool check_triangle_strip(
     const vector<vec3i>& adjacencies, const vector<int>& strip) {
-  auto faces = unordered_set<int>{};
+  auto faces = std::unordered_set<int>{};
   faces.insert(strip[0]);
   for (auto i = 1; i < strip.size(); ++i) {
     if (faces.count(strip[i]) != 0) {
@@ -250,7 +251,7 @@ inline pair<int, float> get_edge_lerp_from_uv(const vec2f& uv) {
 
 inline bool edge_in_triangle(const vec3i& triangle, const vec2i& edge) {
   for (auto k = 0; k < 3; k++) {
-    auto& triangle_edge = get_mesh_edge_from_index(triangle, k);
+    auto triangle_edge = get_mesh_edge_from_index(triangle, k);
     if (triangle_edge == edge) return true;
   }
   return false;

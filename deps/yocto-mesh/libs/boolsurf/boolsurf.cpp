@@ -1,8 +1,9 @@
 #include "boolsurf.h"
 
-#include <cinolib/homotopy_basis.h>
+//#include <cinolib/homotopy_basis.h>
 #include <yocto/yocto_parallel.h>
 
+#include <iostream>
 #include <cassert>
 #include <deque>
 
@@ -44,17 +45,17 @@ scope_timer::scope_timer(const string& msg) {
   printf("%s started\n", msg.c_str());
   scope_timer_indent += 1;
   message    = msg;
-  start_time = get_time_();
+  start_time = _get_time();
 }
 
 scope_timer::~scope_timer() {
   scope_timer_indent -= 1;
   if (start_time < 0) return;
-  auto elapsed = get_time_() - start_time;
+  auto elapsed = _get_time() - start_time;
   printf("[timer]");
   printf(" %.*s", scope_timer_indent, "|||||||||||||||||||||||||");
   // printf("%d", scope_timer_indent);
-  printf("%s %s\n", message.c_str(), format_duration(elapsed).c_str());
+  printf("%s %s\n", message.c_str(), _format_duration(elapsed).c_str());
 }
 
 // Build adjacencies between faces (sorted counter-clockwise)
@@ -110,7 +111,7 @@ void init_mesh(bool_mesh& mesh) {
   mesh.bbox     = bbox;
   mesh.bbox.min = (mesh.bbox.min - center(bbox)) / max(size(bbox));
   mesh.bbox.max = (mesh.bbox.max - center(bbox)) / max(size(bbox));
-  mesh.bvh      = make_triangles_bvh(mesh.triangles, mesh.positions, {});
+  //mesh.bvh      = make_triangles_bvh(mesh.triangles, mesh.positions, {});
 
   mesh.dual_solver = make_dual_geodesic_solver(
       mesh.triangles, mesh.positions, mesh.adjacencies);
@@ -122,7 +123,7 @@ void init_mesh(bool_mesh& mesh) {
   mesh.adjacencies.reserve(mesh.adjacencies.size() * 2);
 }
 
-std::tuple<vector<int>, mesh_point, mesh_point> handle_short_strips(
+/* std::tuple<vector<int>, mesh_point, mesh_point> handle_short_strips(
     const vector<vec3i>& triangles, const vector<vec3f>& positions,
     const vector<int>& strip, const mesh_point& start, const mesh_point& end) {
   if (strip.size() == 1) {
@@ -145,7 +146,7 @@ std::tuple<vector<int>, mesh_point, mesh_point> handle_short_strips(
     return {strip, start, end};
   }
   return {{-1}, {}, {}};
-}
+} */
 
 vec3f flip_bary_to_adjacent_tri(const vector<vec3i>& adjacencies,
     const int tid0, const int tid1, const vec3f& bary) {
@@ -168,7 +169,7 @@ static vec3f get_bary(const vec2f& uv) {
   return vec3f{1 - uv.x - uv.y, uv.x, uv.y};
 }
 
-std::tuple<vector<int>, mesh_point, mesh_point> cleaned_strip(
+/* std::tuple<vector<int>, mesh_point, mesh_point> cleaned_strip(
     const vector<vec3i>& triangles, const vector<vec3f>& positions,
     const vector<vec3i>& adjacencies, const vector<int>& strip,
     const mesh_point& start, const mesh_point& end) {
@@ -245,7 +246,7 @@ std::tuple<vector<int>, mesh_point, mesh_point> cleaned_strip(
     new_start = {cleaned[0], vec2f{b3f.y, b3f.z}};  // updating start
   }
   return {cleaned, new_start, new_end};
-}
+} */
 
 void remove_loops_from_strip(vector<int>& strip) {
   auto faces      = unordered_map<int, int>{};
@@ -305,7 +306,7 @@ void reset_mesh(bool_mesh& mesh) {
   }
 }
 
-cinolib::Trimesh<> get_cinomesh(const bool_mesh& mesh) {
+/* cinolib::Trimesh<> get_cinomesh(const bool_mesh& mesh) {
   auto verts = vector<cinolib::vec3d>();
   verts.reserve(mesh.positions.size());
   for (auto& pos : mesh.positions)
@@ -529,7 +530,7 @@ vector<int> sort_homotopy_basis_around_vertex(
   }
 
   return ordered_basis;
-}
+} */
 
 vector<int> compute_polygonal_schema(const vector<int>& basis) {
   auto inverse_mapping = hash_map<int, int>();
@@ -783,7 +784,7 @@ vector<int> compute_strip_from_basis(const vector<int>& base,
   return strip;
 }
 
-geodesic_path compute_geodesic_path(
+/* geodesic_path compute_geodesic_path(
     const bool_mesh& mesh, const mesh_point& start, const mesh_point& end) {
   auto path = geodesic_path{};
   if (start.face == end.face) {
@@ -798,7 +799,7 @@ geodesic_path compute_geodesic_path(
   path = shortest_path(
       mesh.triangles, mesh.positions, mesh.adjacencies, start, end, strip);
   return path;
-}
+} */
 
 mesh_point eval_geodesic_path(
     const bool_mesh& mesh, const geodesic_path& path, float t) {
@@ -842,7 +843,7 @@ vector<mesh_segment> mesh_segments(const vector<vec3i>& triangles,
   return result;
 }
 
-void recompute_polygon_segments(const bool_mesh& mesh, const bool_state& state,
+/* void recompute_polygon_segments(const bool_mesh& mesh, const bool_state& state,
     mesh_polygon& polygon, int index) {
   // Remove this to automatically close the curves
   if (polygon.points.size() == 0) return;
@@ -901,7 +902,7 @@ void recompute_polygon_segments(const bool_mesh& mesh, const bool_state& state,
   }
 
   polygon.is_contained_in_single_face = (faces.size() == 1);
-}
+} */
 
 inline int num_segments(const hashgrid_polyline& polyline) {
   if (polyline.is_closed) return (int)polyline.points.size();
@@ -1934,7 +1935,7 @@ bool check_polygon_validity(bool_mesh& mesh, int shape_id, int polygon_id) {
   return true;
 }
 
-vector<mesh_point> compute_parallel_loop(
+/* vector<mesh_point> compute_parallel_loop(
     bool_mesh& mesh, const mesh_polygon& polygon) {
   auto parallel_points = vector<mesh_point>();
   parallel_points.reserve(polygon.points.size());
@@ -1962,7 +1963,7 @@ vector<mesh_point> compute_parallel_loop(
   // Parallel loop is traced in the opposite direction
   std::reverse(parallel_points.begin(), parallel_points.end());
   return parallel_points;
-}
+} */
 
 template <typename F>
 inline void parallel_for_batch(int num_threads, size_t size, F&& f) {
@@ -2415,13 +2416,13 @@ void compute_bool_operations(
   }
 }
 
-mesh_point intersect_mesh(const bool_mesh& mesh, const shape_bvh& bvh,
+/* mesh_point intersect_mesh(const bool_mesh& mesh, const shape_bvh& bvh,
     const scene_camera& camera, const vec2f& uv) {
   auto ray = camera_ray(
       camera.frame, camera.lens, camera.aspect, camera.film, uv);
   auto isec = intersect_triangles_bvh(bvh, mesh.triangles, mesh.positions, ray);
   return {isec.element, isec.uv};
-}
+} */
 
 vec3f get_cell_color(const bool_state& state, int cell_id, bool color_shapes) {
   if (state.bool_shapes.empty() && state.labels.empty()) return {1, 1, 1};

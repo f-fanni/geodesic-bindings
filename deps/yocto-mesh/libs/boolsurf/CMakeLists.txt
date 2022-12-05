@@ -3,7 +3,7 @@ add_subdirectory(ext/CDT/CDT)
 add_library(boolsurf
   boolsurf_utils.h
   boolsurf.h boolsurf.cpp
-  boolsurf_io.h boolsurf_io.cpp
+  #boolsurf_io.h boolsurf_io.cpp
 )
 
 set_target_properties(boolsurf PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES)
