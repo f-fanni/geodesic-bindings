@@ -31,7 +31,7 @@ def compute_distance_multisource(V, F, v_inds):
 
 def compute_distance_multisource_meshpoint(V, F, barycentric_coords, face_ids):
     solver = MeshHeatMethodDistanceSolver(V, F)
-    solver.compute_distance_multisource_meshpoint(barycentric_coords, face_ids)
+    return solver.compute_distance_multisource_meshpoint(barycentric_coords, face_ids)
 
 
 class MeshVectorHeatSolver():
@@ -119,8 +119,8 @@ class YoctoMeshSolver():
     def compute_distance(self, sourceVerts):
         return np.array(self.bound_solver.compute_distance(sourceVerts))
 
-    def compute_distance_meshpoints(self, barycentric_coordinates, face_ids, max_distace):
-        return (self.bound_solver.compute_distance_meshpoints(barycentric_coordinates, face_ids, max_distace))
+    def compute_distance_meshpoints(self, barycentric_coordinates, face_ids, max_distance):
+        return (self.bound_solver.compute_distance_meshpoints(barycentric_coordinates, face_ids, max_distance))
 
 def compute_direction_field(V, F, n_symmetries):
     return pp3db.compute_direction_field(V, F, n_symmetries)

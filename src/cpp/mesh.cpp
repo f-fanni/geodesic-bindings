@@ -625,14 +625,17 @@ public:
     std::vector<int> sources;
     sources.reserve(2 * face_ids.size()); // just a rough estimate
     for (int i = 0; i < face_ids.size(); i++) {
+      int f_i = face_ids[i];
       auto point = yocto::interpolate_triangle(
-          positions[triangles[i], 0], positions[triangles[i], 1], positions[triangles[i], 2],
+          positions[triangles[f_i][0]], positions[triangles[f_i][1]], positions[triangles[f_i][2]],
           {static_cast<float>(barycentric_coords(1)), static_cast<float>(barycentric_coords(2))});
       for (auto j : {0, 1, 2}) {
-        distances[triangles[i], j] = yocto::distance(positions[triangles[i], j], point);
-        sources.push_back(static_cast<int>(triangles[i], j));
+        distances[triangles[f_i][j]] = yocto::distance(positions[triangles[f_i][j]], point);
+        std::cout << "distances " << distances[triangles[f_i][j]]  << std::endl;
+        sources.push_back(static_cast<int>(triangles[f_i][j]));
       }
     }
+    std::cout << "vertices " << sources[0] << " "<< sources[1] << " "<< sources[2] << std::endl;
     yocto::update_geodesic_distances(distances, geo_solver, sources, max_distance);
     auto aux = std::vector<double>(distances.begin(), distances.end());
     return Eigen::Map<Vector<double>, Eigen::Unaligned>(aux.data(), aux.size());

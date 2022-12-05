@@ -197,4 +197,11 @@ print(Mat)
 print(np.matmul(Mat, np.array([ 0.50548752, -0.86283392, 0])))
 print('---')
 print(np.linalg.solve(Mat, ext3D[N]))
+
+solver = pp3d.MeshHeatMethodDistanceSolver(V, F)
+dists4 = yoctosolver.compute_distance_meshpoints(barycentric_coordinates=[[0.5,0.2,0.3]], face_ids=[4200], max_distace=10000)
+dists5 = solver.compute_distance_multisource_meshpoint([[0.5, 0.2, 0.3]], [4200])
+ps_mesh.add_scalar_quantity("dist_yocto", dists4)
+ps_mesh.add_scalar_quantity("dist_heat", dists5)
+
 ps.show()
