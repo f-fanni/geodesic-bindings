@@ -2527,8 +2527,6 @@ vector<mesh_segment> geodesic_path_to_segments(const vector<mesh_point>& path, c
   for (int i=0; i<path.size()-1; i++){
     auto short_path = compute_shortest_path(graph, triangles, positions, adjacencies, path[i], path[i+1]);
     auto segments = mesh_segments(triangles, short_path.strip, short_path.lerps, short_path.start, short_path. end);
-    for (auto& s: segments){
-    }
     res.insert(res.end(), segments.begin(), segments.end());
   }
   return res;
