@@ -22,4 +22,4 @@ pybind11_add_module(potpourri3d_bindings
 include_directories(potpourri3d_bindings ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp)
 set_target_properties(potpourri3d_bindings PROPERTIES CXX_STANDARD 17)
 
-target_link_libraries(potpourri3d_bindings PRIVATE geometry-central yocto yocto_mesh)
+target_link_libraries(potpourri3d_bindings PRIVATE geometry-central yocto yocto_mesh boolsurf)

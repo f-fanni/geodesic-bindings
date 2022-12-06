@@ -52,6 +52,7 @@ ps_mesh.add_vector_quantity("transport vec2", ext3D)
 logmap = solver.compute_log_map(1)
 ps_mesh.add_parameterization_quantity("logmap", logmap)
 
+""" 
 # Flip geodesics
 path_solver = pp3d.EdgeFlipGeodesicSolver(V,F)
 for k in range(50):
@@ -170,7 +171,7 @@ for poin in ListPoin:
 from timeit import default_timer as timer
 solver = pp3d.TraceGeodesicsSolver(V,F)
 start = timer()
-for i in range(10000):
+for i in range(100):
     point, faceid, dir = solver.trace_geodesic(420, [10+np.random.randint(-5,5),50+np.random.randint(-5,5)])
 end = timer()
 print(("done in seconds: ",end - start, (end - start)/10000)) # Time in seconds, e.g. 5.38091952400282
@@ -196,12 +197,78 @@ Mat = np.array([basisX[N],basisY[N],basisN[N],]).transpose()
 print(Mat)
 print(np.matmul(Mat, np.array([ 0.50548752, -0.86283392, 0])))
 print('---')
-print(np.linalg.solve(Mat, ext3D[N]))
+print(np.linalg.solve(Mat, ext3D[N])) """
 
+yoctosolver = pp3d.YoctoMeshSolver(V,F)
 solver = pp3d.MeshHeatMethodDistanceSolver(V, F)
-dists4 = yoctosolver.compute_distance_meshpoints(barycentric_coordinates=[[0.5,0.2,0.3]], face_ids=[4200], max_distace=10000)
+dists4 = yoctosolver.compute_distance_meshpoints(barycentric_coordinates=[[0.5,0.2,0.3]], face_ids=[4200], max_distance=10000)
 dists5 = solver.compute_distance_multisource_meshpoint([[0.5, 0.2, 0.3]], [4200])
 ps_mesh.add_scalar_quantity("dist_yocto", dists4)
 ps_mesh.add_scalar_quantity("dist_heat", dists5)
+
+""" baryy,face_idsy = yoctosolver.compute_bezier_curve_vertices(v_list=[400,500,800,1000], subdivisions=4)
+path_pts = np.array([ baryy[i,0]*V[F[face_idsy[i],0]]+baryy[i,1]*V[F[face_idsy[i],1]]+baryy[i,2]*V[F[face_idsy[i],2]] for i in range(len(face_idsy))])
+ps.register_curve_network("bezier_yocto", path_pts, edges='line')
+yoctosolver.update_stored_paths(baryy, face_idsy) """
+
+""" baryy,face_idsy = yoctosolver.compute_bezier_curve_vertices(v_list=[300,600,1200,2500], subdivisions=4)
+path_pts = np.array([ baryy[i,0]*V[F[face_idsy[i],0]]+baryy[i,1]*V[F[face_idsy[i],1]]+baryy[i,2]*V[F[face_idsy[i],2]] for i in range(len(face_idsy))])
+ps.register_curve_network("bezier_yocto2", path_pts, edges='line')
+print(yoctosolver.path_intersect_others(baryy, face_idsy))
+yoctosolver.update_stored_paths(baryy, face_idsy) """ # intersect the prev, as intended
+
+""" baryy,face_idsy = yoctosolver.compute_bezier_curve_vertices(v_list=[10,20,30,52], subdivisions=4)
+path_pts = np.array([ baryy[i,0]*V[F[face_idsy[i],0]]+baryy[i,1]*V[F[face_idsy[i],1]]+baryy[i,2]*V[F[face_idsy[i],2]] for i in range(len(face_idsy))])
+ps.register_curve_network("bezier_yocto3", path_pts, edges='line')
+print(yoctosolver.path_intersect_others(baryy, face_idsy))
+yoctosolver.update_stored_paths(baryy, face_idsy) """
+
+""" baryy,face_idsy = yoctosolver.compute_bezier_curve_vertices(v_list=[10,20,30,52], subdivisions=4)
+path_pts = np.array([ baryy[i,0]*V[F[face_idsy[i],0]]+baryy[i,1]*V[F[face_idsy[i],1]]+baryy[i,2]*V[F[face_idsy[i],2]] for i in range(len(face_idsy))])
+ps.register_curve_network("bezier_yocto4", path_pts, edges='line')
+print(yoctosolver.path_intersect_others(baryy, face_idsy))
+yoctosolver.update_stored_paths(baryy, face_idsy) """ # completely overlapping to the prev, it says it intersects -> ok
+
+""" baryy,face_idsy = yoctosolver.compute_bezier_curve_vertices(v_list=[52,30,20,10], subdivisions=4)
+path_pts = np.array([ baryy[i,0]*V[F[face_idsy[i],0]]+baryy[i,1]*V[F[face_idsy[i],1]]+baryy[i,2]*V[F[face_idsy[i],2]] for i in range(len(face_idsy))])
+ps.register_curve_network("bezier_yocto4_2", path_pts, edges='line')
+print(yoctosolver.path_intersect_others(baryy, face_idsy))
+yoctosolver.update_stored_paths(baryy, face_idsy) """ # as the prev, but reversed, still intersects ok
+
+""" baryy,face_idsy = yoctosolver.compute_bezier_curve_vertices(v_list=[10,200,230,252], subdivisions=4)
+path_pts = np.array([ baryy[i,0]*V[F[face_idsy[i],0]]+baryy[i,1]*V[F[face_idsy[i],1]]+baryy[i,2]*V[F[face_idsy[i],2]] for i in range(len(face_idsy))])
+ps.register_curve_network("bezier_yocto5", path_pts, edges='line')
+print(yoctosolver.path_intersect_others(baryy, face_idsy))
+yoctosolver.update_stored_paths(baryy, face_idsy) """ # start point shared with another, it says it does NOT intersect -> ok
+
+""" baryy,face_idsy = yoctosolver.compute_bezier_curve_vertices(v_list=[252, 230, 200, 10], subdivisions=4)
+path_pts = np.array([ baryy[i,0]*V[F[face_idsy[i],0]]+baryy[i,1]*V[F[face_idsy[i],1]]+baryy[i,2]*V[F[face_idsy[i],2]] for i in range(len(face_idsy))])
+ps.register_curve_network("bezier_yocto6", path_pts, edges='line')
+print(yoctosolver.path_intersect_others(baryy, face_idsy))
+yoctosolver.update_stored_paths(baryy, face_idsy) """ # end in the beginning of another one, does not intersect
+
+""" baryy,face_idsy = yoctosolver.compute_bezier_curve_vertices(v_list=[252, 230, 200, 52], subdivisions=4)
+path_pts = np.array([ baryy[i,0]*V[F[face_idsy[i],0]]+baryy[i,1]*V[F[face_idsy[i],1]]+baryy[i,2]*V[F[face_idsy[i],2]] for i in range(len(face_idsy))])
+ps.register_curve_network("bezier_yocto7", path_pts, edges='line')
+print(yoctosolver.path_intersect_others(baryy, face_idsy))
+yoctosolver.update_stored_paths(baryy, face_idsy) """ # end in the end of another one, does not intersect
+
+""" baryy,face_idsy = yoctosolver.compute_bezier_curve_vertices(v_list=[252, 230, 200, 10], subdivisions=4)
+path_pts = np.array([ baryy[i,0]*V[F[face_idsy[i],0]]+baryy[i,1]*V[F[face_idsy[i],1]]+baryy[i,2]*V[F[face_idsy[i],2]] for i in range(len(face_idsy))])
+ps.register_curve_network("bezier_yocto8", path_pts, edges='line')
+print(yoctosolver.path_intersect_others(baryy, face_idsy))
+yoctosolver.update_stored_paths(baryy, face_idsy) """ # end in the star of another one, does not intersect
+
+num_iter = 200
+while True:
+    if num_iter == 0: break
+    start = np.random.choice(F.shape[0])
+    v_list = [start, start +9, start +16, start + 21]
+    baryy,face_idsy = yoctosolver.compute_bezier_curve_vertices(v_list=v_list, subdivisions=4)
+    if not yoctosolver.path_intersect_others(baryy, face_idsy):
+        yoctosolver.update_stored_paths(baryy, face_idsy)
+        path_pts = np.array([ baryy[i,0]*V[F[face_idsy[i],0]]+baryy[i,1]*V[F[face_idsy[i],1]]+baryy[i,2]*V[F[face_idsy[i],2]] for i in range(len(face_idsy))])
+        ps.register_curve_network(f"bezier_yocto_{num_iter}", path_pts, edges='line')
+        num_iter -= 1
 
 ps.show()

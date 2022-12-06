@@ -122,6 +122,12 @@ class YoctoMeshSolver():
     def compute_distance_meshpoints(self, barycentric_coordinates, face_ids, max_distance):
         return (self.bound_solver.compute_distance_meshpoints(barycentric_coordinates, face_ids, max_distance))
 
+    def path_intersect_others(self, barycentric_coordinates, face_ids):
+        return self.bound_solver.path_intersect_others(barycentric_coordinates, face_ids)
+    
+    def update_stored_paths(self, barycentric_coordinates, face_ids):
+        return self.bound_solver.update_stored_paths(barycentric_coordinates, face_ids)
+
 def compute_direction_field(V, F, n_symmetries):
     return pp3db.compute_direction_field(V, F, n_symmetries)
 

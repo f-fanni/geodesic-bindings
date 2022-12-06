@@ -13,6 +13,7 @@
 #include "geometrycentral/utilities/eigen_interop_helpers.h"
 #include "yocto/yocto_shape.h"
 #include "yocto_mesh/yocto_mesh.h"
+#include "boolsurf/boolsurf.h"
 
 #include <pybind11/eigen.h>
 #include <pybind11/numpy.h>
@@ -548,6 +549,8 @@ public:
       vertices2mesh_point[triangles[i][1]] = {i, {1, 0}};
       vertices2mesh_point[triangles[i][2]] = {i, {0, 1}};
     }
+    // vector of segments
+    placed_segments = std::vector<std::vector<yocto::mesh_segment>>(triangles.size());
   }
 
   std::pair<DenseMatrix<double>, Vector<int>> compute_bezier_curve_vertices(std::vector<int64_t> verts,
@@ -631,14 +634,33 @@ public:
           {static_cast<float>(barycentric_coords(1)), static_cast<float>(barycentric_coords(2))});
       for (auto j : {0, 1, 2}) {
         distances[triangles[f_i][j]] = yocto::distance(positions[triangles[f_i][j]], point);
-        std::cout << "distances " << distances[triangles[f_i][j]]  << std::endl;
         sources.push_back(static_cast<int>(triangles[f_i][j]));
       }
     }
-    std::cout << "vertices " << sources[0] << " "<< sources[1] << " "<< sources[2] << std::endl;
     yocto::update_geodesic_distances(distances, geo_solver, sources, max_distance);
     auto aux = std::vector<double>(distances.begin(), distances.end());
     return Eigen::Map<Vector<double>, Eigen::Unaligned>(aux.data(), aux.size());
+  }
+
+  bool path_intersect_others(DenseMatrix<double> barycentric_coords, Vector<int> face_ids) {
+    std::vector<yocto::mesh_point> points(face_ids.size());
+    for (int i = 0; i < face_ids.size(); i++) {
+      points[i] = {static_cast<int>(face_ids[i]),
+                   {static_cast<float>(barycentric_coords(i, 1)), static_cast<float>(barycentric_coords(i, 2))}};
+    }
+    auto segments = yocto::geodesic_path_to_segments(points, dual_geo_solver, triangles, positions, adjacencies);
+    return yocto::path_intersects_segments(segments, placed_segments);
+  }
+
+  void update_stored_paths(DenseMatrix<double> barycentric_coords, Vector<int> face_ids) {
+    std::vector<yocto::mesh_point> points(face_ids.size());
+    for (int i = 0; i < face_ids.size(); i++) {
+      points[i] = {static_cast<int>(face_ids[i]),
+                   {static_cast<float>(barycentric_coords(i, 1)), static_cast<float>(barycentric_coords(i, 2))}};
+    }
+    auto segments = yocto::geodesic_path_to_segments(points, dual_geo_solver, triangles, positions, adjacencies);
+    yocto::update_segment_vector(segments, placed_segments);
+    return;
   }
 
 private:
@@ -648,6 +670,7 @@ private:
   std::vector<yocto::mesh_point> vertices2mesh_point;
   yocto::geodesic_solver geo_solver;
   yocto::dual_geodesic_solver dual_geo_solver;
+  std::vector<std::vector<yocto::mesh_segment>> placed_segments;
 };
 
 // Actual binding code
@@ -692,7 +715,9 @@ void bind_mesh(py::module& m) {
         .def("compute_bezier_curve_vertices", &YoctoMeshManager::compute_bezier_curve_vertices, py::arg("vert_list"), py::arg("subdivisions"))
         .def("compute_bezier_curve_meshpoints", &YoctoMeshManager::compute_bezier_curve_meshpoints, py::arg("barycentric_coords"), py::arg("face_ids"), py::arg("subdivisions"))
         .def("compute_distance", &YoctoMeshManager::compute_distance, py::arg("sourceVerts"))
-        .def("compute_distance_meshpoints", &YoctoMeshManager::compute_distance_meshpoints, py::arg("barycentric_coords"), py::arg("face_ids"), py::arg("max_distance"));
+        .def("compute_distance_meshpoints", &YoctoMeshManager::compute_distance_meshpoints, py::arg("barycentric_coords"), py::arg("face_ids"), py::arg("max_distance"))
+        .def("path_intersect_others", &YoctoMeshManager::path_intersect_others, py::arg("barycentric_coords"), py::arg("face_ids"))
+        .def("update_stored_paths", &YoctoMeshManager::update_stored_paths, py::arg("barycentric_coords"), py::arg("face_ids"));
 
   //m.def("read_mesh", &read_mesh, "Read a mesh from file.", py::arg("filename"));
 }

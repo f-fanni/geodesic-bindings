@@ -381,4 +381,10 @@ static void flood_fill_debug(
   }
 }
 
+bool path_intersects_segments(const vector<mesh_segment>& path,
+    const vector<vector<mesh_segment>>& segment_vector);
+void update_segment_vector(const vector<mesh_segment>& path, vector<vector<mesh_segment>>& segment_vector);
+vector<mesh_segment> geodesic_path_to_segments(const vector<mesh_point>& path, const dual_geodesic_solver& graph,
+    const vector<vec3i>& triangles, const vector<vec3f>& positions, const vector<vec3i>& adjacencies);
+
 }  // namespace yocto

@@ -8,7 +8,7 @@ add_library(boolsurf
 
 set_target_properties(boolsurf PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES)
 target_include_directories(boolsurf PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
-target_link_libraries(boolsurf PUBLIC yocto_mesh)
+target_link_libraries(boolsurf PUBLIC yocto_mesh yocto)
 
 #find_package(cinolib REQUIRED)
 #target_link_libraries(boolsurf PUBLIC cinolib)

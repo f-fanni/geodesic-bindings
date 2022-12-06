@@ -2493,4 +2493,45 @@ bool& debug_restart() {
   return result;
 }
 
+// Stuff for bindings
+
+bool path_intersects_segments(const vector<mesh_segment>& path,
+    const vector<vector<mesh_segment>>& segment_vector) {
+  // Cerchiamo intersezioni tra il path e quelli precedentement inseriti
+  for (const auto& segment: path){
+    for (const auto& other: segment_vector[segment.face]){
+      auto l = intersect_segments(segment.start, segment.end, other.start, other.end);
+      if (l.x < 0.0f || l.x > 1.0f || l.y < 0.0f || l.y > 1.0f) {
+        continue;
+      }
+      if (( segment.face == path[0].face && segment.start == path[0].start && segment.end == path[0].end )
+         &&(segment.start == other.start || segment.start == other.end)) {
+        continue;
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+void update_segment_vector(const vector<mesh_segment>& path, vector<vector<mesh_segment>>& segment_vector){
+  for (const auto& segment: path){
+    segment_vector[segment.face].push_back(segment);
+  }
+}
+
+vector<mesh_segment> geodesic_path_to_segments(const vector<mesh_point>& path, const dual_geodesic_solver& graph,
+    const vector<vec3i>& triangles, const vector<vec3f>& positions, const vector<vec3i>& adjacencies){
+  vector<mesh_segment> res;
+  res.reserve(path.size());
+  for (int i=0; i<path.size()-1; i++){
+    auto short_path = compute_shortest_path(graph, triangles, positions, adjacencies, path[i], path[i+1]);
+    auto segments = mesh_segments(triangles, short_path.strip, short_path.lerps, short_path.start, short_path. end);
+    for (auto& s: segments){
+    }
+    res.insert(res.end(), segments.begin(), segments.end());
+  }
+  return res;
+}
+
 }  // namespace yocto
