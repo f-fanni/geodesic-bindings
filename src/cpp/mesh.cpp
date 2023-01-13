@@ -1,3 +1,4 @@
+#include "boolsurf/boolsurf.h"
 #include "geometrycentral/numerical/linear_algebra_utilities.h"
 #include "geometrycentral/surface/direction_fields.h"
 #include "geometrycentral/surface/edge_length_geometry.h"
@@ -13,7 +14,6 @@
 #include "geometrycentral/utilities/eigen_interop_helpers.h"
 #include "yocto/yocto_shape.h"
 #include "yocto_mesh/yocto_mesh.h"
-#include "boolsurf/boolsurf.h"
 
 #include <pybind11/eigen.h>
 #include <pybind11/numpy.h>
@@ -437,8 +437,8 @@ public:
   }
 
   // Trace a geodesic path with a given direction, returns the final point as meshpoint, the face it lies in and the
-  // ending direction
-  std::tuple<Eigen::Vector3d, int64_t, Eigen::Vector2d>
+  // ending direction and whether we hit a boundary
+  std::tuple<Eigen::Vector3d, int64_t, Eigen::Vector2d, bool>
   trace_geodesic_path_meshpoint(DenseMatrix<double> barycentric_coords, int64_t face_id, DenseMatrix<double> traceVec) {
 
     // Convert the input to the expected types
@@ -454,8 +454,8 @@ public:
     Vector3 endP = res_point.faceCoords;
     int64_t faceInd = res_point.face.getIndex();
     Vector2 endDir = res.endingDir;
-    return std::tuple<Eigen::Vector3d, int64_t, Eigen::Vector2d>(Eigen::Vector3d({endP.x, endP.y, endP.z}), faceInd,
-                                                                 Eigen::Vector2d({endDir.x, endDir.y}));
+    return std::tuple<Eigen::Vector3d, int64_t, Eigen::Vector2d, bool>(
+        Eigen::Vector3d({endP.x, endP.y, endP.z}), faceInd, Eigen::Vector2d({endDir.x, endDir.y}), res.hitBoundary);
   }
 
 private:
